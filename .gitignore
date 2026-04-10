@@ -1,0 +1,4 @@
+processedASCII/*.txt
+.gradient.conf.bak
+*.swp
+.DS_Store
