@@ -1,67 +1,79 @@
-# gradfetch
+# gradfetch v3.0
 
-Gestor de logotipos y gradientes para fastfetch.
+Gestor avanzado de logotipos, gradientes y temas para `fastfetch`.
 
 ## Descripción
 
-gradfetch automatiza la rotación y el renderizado de logotipos para fastfetch. El sistema implementa un procesador que aplica gradientes verticales RGB de 24 bits (True Color) a archivos de arte ASCII mediante códigos de escape ANSI (\e[38;2;R;G;Bm). Además, integra un lanzador híbrido que selecciona dinámicamente entre formatos PNG (vía protocolo Kitty) y ASCII procesado, basándose en la resolución del terminal y factores de probabilidad configurables.
+**gradfetch** es una suite de herramientas diseñada para elevar la estética de `fastfetch`. Automatiza la rotación de logotipos y aplica gradientes True Color (24 bits) de alta precisión al arte ASCII. 
+
+La versión 3.0 introduce un motor de procesamiento basado en `awk` que permite gradientes multi-color en múltiples direcciones, soporte completo para temas intercambiables y un lanzador inteligente con detección de resolución.
+
+## Características Principales
+
+- 🌈 **Motor de Gradientes Pro:** Soporte para modos `vertical`, `horizontal` y `diagonal` con interpolación ilimitada de colores.
+- 🎨 **Soporte de Temas:** Cambia instantáneamente entre diferentes configuraciones estéticas (Ayanami, SynthWave, Cyberpunk, etc.).
+- 🖼️ **Lanzador Híbrido:** Selección dinámica entre imágenes PNG (protocolo Kitty) y ASCII procesado según el tamaño de la terminal.
+- 🐄 **Integración Cowthink:** Modo divertido para mostrar mensajes personalizados junto a la info del sistema.
+- 📐 **Ajuste Inteligente:** Recorte y alineación automática de ASCII para una presentación perfecta en la caja de información.
 
 ## Requisitos
 
-- fastfetch >= 2.x
-- Terminal con soporte para protocolo Kitty (ej. Kitty, WezTerm)
-- Bash >= 5.x
-- ncurses (comando tput disponible)
+- `fastfetch` >= 2.x
+- Terminal con soporte True Color y Kitty Graphics (ej. Kitty, WezTerm, Ghostty, Foot)
+- `awk`, `bash` >= 5.x
+- `ncurses` (comando `tput`)
 
 ## Instalación
-
-Para instalar gradfetch en el entorno del usuario:
 
 ```bash
 git clone git@github.com:ElRoutel/gradfetch.git ~/gradfetch
 cd ~/gradfetch
+chmod +x install.sh
 ./install.sh
 ```
 
-El script de instalación creará enlaces simbólicos en `~/.config/fastfetch` y añadirá el alias `ff` a los archivos de configuración de la shell detectados (.bashrc, .zshrc).
+El instalador creará el alias `ff` en tu `.bashrc` o `.zshrc`.
 
-## Configuración
+## Uso y Comandos
 
-La configuración se gestiona en el archivo `gradient.conf`. Las variables disponibles son:
+| Comando | Descripción |
+| :--- | :--- |
+| `ff` | Ejecuta fastfetch con un logo/gradiente aleatorio del tema activo. |
+| `ff -themels` | Lista todos los temas instalados y muestra el activo. |
+| `ff -theme <nombre>` | Cambia el tema global (ej. `ff -theme ayanami`). |
+| `ff -adjust` | Ejecuta con recorte inteligente de espacios en blanco. |
+| `ff --img` | Fuerza el uso de una imagen PNG (si hay espacio). |
+| `ff --ascii` | Fuerza el uso de arte ASCII procesado. |
+| `ff -cts "Hola!"` | Usa `cowthink` con un mensaje personalizado. |
+| `ff --debug` | Muestra tiempos de carga y detalles de selección. |
 
-| Campo | Tipo | Rango | Descripción |
-| :--- | :--- | :--- | :--- |
-| COLOR_TOP_R | Entero | 0–255 | Componente roja del color superior. |
-| COLOR_TOP_G | Entero | 0–255 | Componente verde del color superior. |
-| COLOR_TOP_B | Entero | 0–255 | Componente azul del color superior. |
-| COLOR_BOTTOM_R | Entero | 0–255 | Componente roja del color inferior. |
-| COLOR_BOTTOM_G | Entero | 0–255 | Componente verde del color inferior. |
-| COLOR_BOTTOM_B | Entero | 0–255 | Componente azul del color inferior. |
-| IMG_CHANCE | Entero | 0–100 | Probabilidad de mostrar PNG sobre ASCII. |
+## Configuración (`gradient.conf`)
 
-## Uso
-
-Ejecutar el alias creado:
-
-```bash
-ff
-```
-
-Para depurar la selección de logotipos y tiempos de ejecución:
+Cada tema tiene su propio `gradient.conf`, pero puedes configurar el global en `~/.config/fastfetch/gradient.conf`:
 
 ```bash
-ff --debug
+# Modo de gradiente: vertical, horizontal, diagonal
+GRADIENT_MODE="diagonal"
+
+# Lista de colores en formato "R,G,B"
+GRADIENT_COLORS=(
+  "255,0,255"   # Magenta
+  "0,255,255"   # Cian
+  "255,255,0"   # Amarillo
+)
+
+# Probabilidad de PNG sobre ASCII (0-100)
+IMG_CHANCE=50
 ```
 
-## Estructura de archivos
+## Estructura de Temas
 
-- `ascii/`: Almacén de archivos .txt originales.
-- `bin/`: Scripts ejecutables del sistema.
-- `pngs/`: Logotipos en formato PNG.
-- `processedASCII/`: Salida generada con códigos de color ANSI.
-- `gradient.conf`: Archivo de configuración de colores y comportamiento.
-- `update_logos.sh`: Sincronizador de enlaces simbólicos en caché.
+Los temas se ubican en `themes/<nombre>/` y pueden contener:
+- `ascii/`: Arte ASCII original.
+- `pngs/`: Imágenes para protocolo Kitty.
+- `gradient.conf`: Configuración específica de colores para ese tema.
+- `config.jsonc`: (Opcional) Configuración personalizada de módulos de fastfetch.
 
 ## Licencia
 
-MIT
+MIT - Creado por [ElRoutel](https://github.com/ElRoutel)
