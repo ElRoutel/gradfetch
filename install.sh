@@ -11,7 +11,7 @@ mkdir -p "$TARGET_DIR"
 
 # Vincular archivos y carpetas del repositorio
 # No vinculamos install.sh, README.md ni .git
-for item in ascii bin pngs processedASCII config.jsonc gradient.conf update_logos.sh; do
+for item in ascii bin pngs processedASCII themes config.jsonc gradient.conf update_logos.sh; do
     src="$REPO_DIR/$item"
     dest="$TARGET_DIR/$item"
     
