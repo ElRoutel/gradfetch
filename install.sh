@@ -2,9 +2,17 @@
 
 # Directorios relativos
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET_DIR="$HOME/.config/fastfetch"
+TARGET_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/fastfetch"
 
 echo "Instalando gradfetch en $TARGET_DIR..."
+
+# ── Respaldo automático ───────────────────────────────────────────────────────
+# Si ya existe una config real (no instalada por gradfetch), se respalda completa
+if [[ -d "$TARGET_DIR" && ! -L "$TARGET_DIR/bin" ]] && [ -n "$(ls -A "$TARGET_DIR" 2>/dev/null)" ]; then
+    BACKUP_DIR="$HOME/fastfetch-backup-$(date +%Y%m%d-%H%M%S)"
+    cp -a "$TARGET_DIR" "$BACKUP_DIR"
+    echo "  - Respaldo de tu config actual en: $BACKUP_DIR"
+fi
 
 # Crear estructura base si no existe
 mkdir -p "$TARGET_DIR"
@@ -14,10 +22,16 @@ mkdir -p "$TARGET_DIR"
 for item in ascii bin pngs processedASCII themes config.jsonc gradient.conf update_logos.sh; do
     src="$REPO_DIR/$item"
     dest="$TARGET_DIR/$item"
-    
+
+    # Conservar el config.jsonc personal del usuario si ya tiene uno propio
+    if [[ "$item" == "config.jsonc" && -f "$dest" && ! -L "$dest" ]]; then
+        echo "  - Conservado: config.jsonc (tu config personal, no se reemplaza)"
+        continue
+    fi
+
     # Eliminar si ya existe y es un symlink o archivo para re-vincular
     [[ -e "$dest" || -L "$dest" ]] && rm -rf "$dest"
-    
+
     ln -s "$src" "$dest"
     echo "  - Vinculado: $item"
 done

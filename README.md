@@ -32,7 +32,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-El instalador creará el alias `ff` en tu `.bashrc` o `.zshrc`.
+El instalador respalda tu `~/.config/fastfetch` actual en `~/fastfetch-backup-<fecha>`, conserva tu `config.jsonc` si ya tienes uno propio, enlaza el resto al repo y crea el alias `ff` en tu `.bashrc` o `.zshrc`.
 
 ## Uso y Comandos
 
@@ -63,10 +63,9 @@ GRADIENT_COLORS=(
   "0,255,255"   # Cian
   "255,255,0"   # Amarillo
 )
-
-# Probabilidad de imagen sobre ASCII (0-100)
-IMG_CHANCE=50
 ```
+
+La probabilidad de imagen sobre ASCII (`IMG_CHANCE`, 0-100) se ajusta al inicio de `bin/hybrid_launcher.sh`.
 
 ## Estructura de Temas
 
