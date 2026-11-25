@@ -10,6 +10,8 @@
 #      ff --img           → Fuerza renderizado de imagen (Kitty)
 #      ff --ascii | -ct   → Fuerza renderizado de ASCIIs procesados
 #      ff -cts "txt"      → Fuerza renderizado de Cowthink con mensaje
+#      ff -gr             → Fuerza regeneración de gradientes (procesador)
+#      ff -t <ruta|txt>   → Modo test: prueba un ASCII sin procesar
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # ── Fail-fast: Verificar dependencia principal ────────────────────────────────
@@ -36,11 +38,72 @@ FORCE_MODE="auto"
 COW_MSG=""
 FORCE_ADJUST=false
 
+# ── Timer helper ──────────────────────────────────────────────────────────────
+_t0=$(date +%s%3N)
+_last=$_t0
+
+tick() {
+    if $DEBUG; then
+        local now=$(date +%s%3N)
+        local delta=$((now - _last))
+        local total=$((now - _t0))
+        printf "\e[90m[DEBUG] %-40s +%dms  (total: %dms)\e[0m\n" "$1" "$delta" "$total" >&2
+        _last=$now
+    fi
+}
+
+tick "script start"
+
 # ── Parseo de Argumentos ──────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -adjust)
             FORCE_ADJUST=true; shift ;;
+        -gr)
+            echo -e "\e[36m[i] Regenerando gradientes para TODOS los temas...\e[0m"
+            # 1. Procesar Global
+            echo -e "\e[33m[>] Procesando Global...\e[0m"
+            unset THEME_BASE
+            bash "$GRADIENT_PROCESSOR" >/dev/null 2>&1
+            
+            # 2. Procesar cada tema
+            if [ -d "$THEMES_DIR" ]; then
+                for t in "$THEMES_DIR"/*/; do
+                    [ -d "$t" ] || continue
+                    theme_name=$(basename "$t")
+                    echo -e "\e[33m[>] Procesando Tema: $theme_name...\e[0m"
+                    export THEME_BASE="${t%/}"
+                    bash "$GRADIENT_PROCESSOR"
+                done
+            fi
+            echo -e "\e[32m[+] Proceso completado.\e[0m"
+            exit 0
+            ;;
+        -t)
+            if [ -n "$2" ] && [[ "$2" != -* ]]; then
+                clear
+                sleep 0.5
+                TEST_INPUT="$2"
+                TEST_FILE=""
+                
+                if [ -f "$TEST_INPUT" ]; then
+                    TEST_FILE="$TEST_INPUT"
+                else
+                    TEST_FILE="${XDG_RUNTIME_DIR:-/tmp}/ff_test_$$.txt"
+                    printf "%s\n" "$TEST_INPUT" > "$TEST_FILE"
+                fi
+                
+                echo -e "\e[36m[i] Modo Test: Visualizando ASCII sin procesar...\e[0m"
+                fastfetch "${FF_ARGS[@]}" --logo "$TEST_FILE" --logo-type file-raw --logo-padding-top 1 --logo-padding-right 3
+                
+                # Limpiar si es temporal
+                [ "$TEST_FILE" != "$TEST_INPUT" ] && rm -f "$TEST_FILE"
+                exit 0
+            else
+                echo -e "\e[31mError: Falta la ruta o el texto para el modo test.\e[0m" >&2
+                exit 1
+            fi
+            ;;
         -themels)
             echo -e "\e[36m[i] Temas disponibles:\e[0m"
             echo -e "  - \e[32mdefault\e[0m (Configuración original)"
@@ -103,23 +166,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# ── Timer helper ──────────────────────────────────────────────────────────────
-_t0=$(date +%s%3N)
-_last=$_t0
-
-tick() {
-    if $DEBUG; then
-        local now=$(date +%s%3N)
-        local delta=$((now - _last))
-        local total=$((now - _t0))
-        printf "\e[90m[DEBUG] %-40s +%dms  (total: %dms)\e[0m\n" "$1" "$delta" "$total" >&2
-        _last=$now
-    fi
-}
-
-tick "script start"
-
-# ── Cargar Tema Actual ────────────────────────────────────────────────────────
+# ── Cargar Tema Actual (Después de parseo de argumentos) ──────────────────────
 CURRENT_THEME="default"
 [ -f "$STATE_FILE" ] && CURRENT_THEME=$(cat "$STATE_FILE")
 
@@ -138,10 +185,13 @@ if [ "$CURRENT_THEME" != "default" ] && [ -d "$THEMES_DIR/$CURRENT_THEME" ]; the
     fi
 else
     tick "using default paths"
+    THEME_BASE=""
     IMG_DIR="$CONFIG_DIR/pngs"
     PROCESSED_ASCII_DIR="$CONFIG_DIR/processedASCII"
     FF_ARGS=()
 fi
+
+# ── Timer helper ──────────────────────────────────────────────────────────────
 
 # ── Obtener dimensiones de la terminal ────────────────────────────────────────
 COLS=$(tput cols 2>/dev/null || echo 80)
@@ -177,15 +227,21 @@ try_run_image() {
     [ ! -d "$IMG_DIR" ] && return 1
 
     local selected
-    selected=$(find "$IMG_DIR" -type f -name "*.png" 2>/dev/null | shuf -n 1)
+    selected=$(find "$IMG_DIR" -type f \( -iname "*.png" -o -iname "*.gif" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.webp" \) 2>/dev/null | shuf -n 1)
     [ -z "$selected" ] && return 1
-    
+
+    # GIFs → kitten icat (soporta animación); resto → protocolo kitty normal
+    local logo_type="kitty"
+    if [[ "${selected,,}" == *.gif ]] && command -v kitten >/dev/null 2>&1; then
+        logo_type="kitty-icat"
+    fi
+
     read -r safe_width safe_height <<< "$(calculate_safe_logo_dimensions)"
-    tick "try_run_image: calling fastfetch (${safe_width}x${safe_height})"
+    tick "try_run_image: calling fastfetch ($logo_type, ${safe_width}x${safe_height}, $(basename "$selected"))"
 
     fastfetch "${FF_ARGS[@]}" \
         --logo "$selected" \
-        --logo-type kitty \
+        --logo-type "$logo_type" \
         --logo-width "$safe_width" \
         --logo-height "$safe_height" \
         --logo-padding-top 1 \
@@ -204,13 +260,25 @@ try_run_ascii() {
         return 1
     fi
 
+    # Definir ASCII_DIR para comparación
+    local current_ascii_dir
+    if [ "$CURRENT_THEME" != "default" ] && [ -d "$THEMES_DIR/$CURRENT_THEME" ]; then
+        current_ascii_dir="$THEMES_DIR/$CURRENT_THEME/ascii"
+    else
+        current_ascii_dir="$CONFIG_DIR/ascii"
+    fi
+
     if [ -x "$GRADIENT_PROCESSOR" ]; then
-        local count=0
-        [ -d "$PROCESSED_ASCII_DIR" ] && count=$(find "$PROCESSED_ASCII_DIR" -name "*.txt" 2>/dev/null | wc -l)
-        if [ "$count" -eq 0 ]; then
-            tick "try_run_ascii: running gradient_processor"
+        local count_processed=0
+        local count_ascii=0
+        [ -d "$PROCESSED_ASCII_DIR" ] && count_processed=$(find "$PROCESSED_ASCII_DIR" -name "*.txt" 2>/dev/null | wc -l)
+        [ -d "$current_ascii_dir" ] && count_ascii=$(find "$current_ascii_dir" -name "*.txt" 2>/dev/null | wc -l)
+        
+        if [ "$count_processed" -eq 0 ] || [ "$count_ascii" -ne "$count_processed" ]; then
+            echo -e "\e[36m[i] Detectados cambios en ASCII, procesando gradientes...\e[0m"
+            tick "try_run_ascii: running gradient_processor (ascii=$count_ascii, processed=$count_processed)"
             export THEME_BASE PROCESSED_ASCII_DIR
-            "$GRADIENT_PROCESSOR" >/dev/null 2>&1 || true
+            "$GRADIENT_PROCESSOR" || true
         fi
     fi
 

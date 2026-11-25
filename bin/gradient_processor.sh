@@ -5,7 +5,8 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 
 set -u
-export LC_NUMERIC=C 
+export LC_NUMERIC=C
+export LC_ALL=C.utf8
 
 GLOBAL_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/fastfetch"
 

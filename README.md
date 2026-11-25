@@ -12,7 +12,7 @@ La versión 3.0 introduce un motor de procesamiento basado en `awk` que permite 
 
 - 🌈 **Motor de Gradientes Pro:** Soporte para modos `vertical`, `horizontal` y `diagonal` con interpolación ilimitada de colores.
 - 🎨 **Soporte de Temas:** Cambia instantáneamente entre diferentes configuraciones estéticas (Ayanami, SynthWave, Cyberpunk, etc.).
-- 🖼️ **Lanzador Híbrido:** Selección dinámica entre imágenes PNG (protocolo Kitty) y ASCII procesado según el tamaño de la terminal.
+- 🖼️ **Lanzador Híbrido:** Selección dinámica entre imágenes (PNG, JPG, WEBP y GIF animados vía `kitten icat`) y ASCII procesado según el tamaño de la terminal.
 - 🐄 **Integración Cowthink:** Modo divertido para mostrar mensajes personalizados junto a la info del sistema.
 - 📐 **Ajuste Inteligente:** Recorte y alineación automática de ASCII para una presentación perfecta en la caja de información.
 
@@ -42,9 +42,11 @@ El instalador creará el alias `ff` en tu `.bashrc` o `.zshrc`.
 | `ff -themels` | Lista todos los temas instalados y muestra el activo. |
 | `ff -theme <nombre>` | Cambia el tema global (ej. `ff -theme ayanami`). |
 | `ff -adjust` | Ejecuta con recorte inteligente de espacios en blanco. |
-| `ff --img` | Fuerza el uso de una imagen PNG (si hay espacio). |
+| `ff --img` | Fuerza el uso de una imagen (PNG/JPG/WEBP/GIF, si hay espacio). |
 | `ff --ascii` | Fuerza el uso de arte ASCII procesado. |
 | `ff -cts "Hola!"` | Usa `cowthink` con un mensaje personalizado. |
+| `ff -gr` | Regenera los gradientes de todos los temas. |
+| `ff -t <ruta\|txt>` | Modo test: muestra un ASCII sin procesar. |
 | `ff --debug` | Muestra tiempos de carga y detalles de selección. |
 
 ## Configuración (`gradient.conf`)
@@ -62,7 +64,7 @@ GRADIENT_COLORS=(
   "255,255,0"   # Amarillo
 )
 
-# Probabilidad de PNG sobre ASCII (0-100)
+# Probabilidad de imagen sobre ASCII (0-100)
 IMG_CHANCE=50
 ```
 
@@ -70,7 +72,7 @@ IMG_CHANCE=50
 
 Los temas se ubican en `themes/<nombre>/` y pueden contener:
 - `ascii/`: Arte ASCII original.
-- `pngs/`: Imágenes para protocolo Kitty.
+- `pngs/`: Imágenes (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`). Los GIF se animan con `kitten icat`.
 - `gradient.conf`: Configuración específica de colores para ese tema.
 - `config.jsonc`: (Opcional) Configuración personalizada de módulos de fastfetch.
 
